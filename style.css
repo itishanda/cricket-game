@@ -1,0 +1,152 @@
+* {
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    box-sizing: border-box;
+}
+
+body {
+    background: linear-gradient(145deg, #0a2f1f 0%, #0a3b22 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Segoe UI', 'Courier New', monospace;
+    margin: 0;
+    padding: 20px;
+}
+
+.game-container {
+    background: #1e3a2f;
+    border-radius: 48px;
+    padding: 20px;
+    box-shadow: 0 20px 35px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.1);
+    border: 2px solid #f7d44a;
+    max-width: 1040px;
+    width: 100%;
+}
+
+canvas {
+    display: block;
+    margin: 0 auto;
+    border-radius: 24px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    cursor: pointer;
+    background: #2c6e2c;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1000 / 500;
+}
+
+.score-panel {
+    background: #0b2b1f;
+    border-radius: 30px;
+    padding: 12px 20px;
+    margin: 15px 10px 10px 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    color: #faf0c8;
+    text-shadow: 2px 2px 0 #1a3a2a;
+    font-weight: bold;
+    border: 1px solid #f3bc4c;
+}
+
+.score-card {
+    display: flex;
+    gap: 24px;
+    background: #00000055;
+    padding: 6px 15px;
+    border-radius: 40px;
+    backdrop-filter: blur(2px);
+}
+
+.score-card span {
+    font-size: 1.6rem;
+    font-weight: 800;
+    background: #f7e05e;
+    color: #1e3a2f;
+    padding: 2px 12px;
+    border-radius: 32px;
+    margin-left: 8px;
+    font-family: monospace;
+}
+
+.controls {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    margin: 15px 10px 5px 10px;
+}
+
+select, button {
+    background: #f3cd81;
+    border: none;
+    font-family: 'Segoe UI', monospace;
+    font-weight: bold;
+    font-size: 1.1rem;
+    padding: 8px 16px;
+    border-radius: 60px;
+    cursor: pointer;
+    box-shadow: 0 5px 0 #a55f2a;
+    transition: 0.07s linear;
+    color: #2a2f1f;
+}
+
+select:active, button:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #a55f2a;
+}
+
+.swing-btn {
+    background: #ffb347;
+    font-size: 1.8rem;
+    font-weight: bold;
+    padding: 12px 35px;
+    letter-spacing: 4px;
+    box-shadow: 0 8px 0 #a14500;
+    color: #2c1a0c;
+}
+
+.action-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin: 10px 10px 0 10px;
+}
+
+.feedback-area {
+    background: #1f2a1b;
+    padding: 6px 15px;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-align: center;
+    color: #ffe6a3;
+    min-width: 180px;
+    flex: 1;
+}
+
+.rrr {
+    background: #00000066;
+    border-radius: 20px;
+    padding: 4px 12px;
+}
+
+.instruction {
+    text-align: center;
+    font-size: 12px;
+    margin-top: 12px;
+    color: #cbb86b;
+}
+
+@media (max-width: 850px) {
+    .score-card span { font-size: 1.2rem; }
+    .swing-btn { font-size: 1.4rem; padding: 8px 25px; }
+    .score-panel { font-size: 0.8rem; }
+    .feedback-area { font-size: 0.9rem; }
+}

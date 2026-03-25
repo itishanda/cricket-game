@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Arcade Cricket - Timing Master</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="gameCanvas" width="1000" height="500"></canvas>
+
+        <div class="score-panel">
+            <div class="score-card">🏏 <span id="runs">0</span> / <span id="wickets">0</span></div>
+            <div class="score-card">📊 Overs: <span id="overs">0.0</span></div>
+            <div class="score-card">🎯 Target: <span id="target">0</span></div>
+            <div class="rrr">⚡ RRR: <span id="rrr">0.00</span></div>
+        </div>
+
+        <div class="controls">
+            <select id="teamSelect">
+                <option value="India">🇮🇳 India</option>
+                <option value="Australia">🇦🇺 Australia</option>
+                <option value="England">🏴󠁧󠁢󠁥󠁮󠁧󠁿 England</option>
+                <option value="Pakistan">🇵🇰 Pakistan</option>
+                <option value="South Africa">🇿🇦 South Africa</option>
+                <option value="New Zealand">🇳🇿 New Zealand</option>
+                <option value="West Indies">🌴 West Indies</option>
+            </select>
+            <select id="oversSelect">
+                <option value="2">2 Overs (fast)</option>
+                <option value="5" selected>5 Overs (classic)</option>
+                <option value="10">10 Overs (full)</option>
+            </select>
+            <button id="startBtn">▶ START MATCH</button>
+        </div>
+
+        <div class="action-area">
+            <div class="feedback-area" id="feedbackMsg">⚡ CLICK/TAP TO SWING ⚡</div>
+            <button id="swingButton" class="swing-btn">🏏 SWING 🏏</button>
+        </div>
+        <div class="instruction">💡 Zones along pitch show run values. Click when the ball is over a zone to score those runs! Miss all zones → OUT.</div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
