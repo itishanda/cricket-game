@@ -18,22 +18,27 @@
     const STUMPS_X = 850;
     const BALL_Y = 250;
 
-    // Zones: each has startX, endX, runs, label, color
-    const zones = [
-        { start: 170, end: 220, runs: 1, label: "1", color: "#a8e6cf" },
-        { start: 220, end: 280, runs: 2, label: "2", color: "#ffd3b5" },
-        { start: 280, end: 340, runs: 3, label: "3", color: "#ffaaa5" },
-        { start: 340, end: 400, runs: 4, label: "4", color: "#ff8b94" },
-        { start: 400, end: 470, runs: 6, label: "6", color: "#f7d44a" },  // sweet spot
-        { start: 470, end: 540, runs: 4, label: "4", color: "#ff8b94" },
-        { start: 540, end: 600, runs: 3, label: "3", color: "#ffaaa5" },
-        { start: 600, end: 660, runs: 2, label: "2", color: "#ffd3b5" },
-        { start: 660, end: 720, runs: 1, label: "1", color: "#a8e6cf" }
+    // Timing sweet spot (where perfect hit occurs)
+    const PERFECT_START = STUMPS_X - 60;
+    const PERFECT_END = STUMPS_X - 30;
+    const GOOD_START = STUMPS_X - 90;
+    const GOOD_END = STUMPS_X - 10;
+    // Outside good zone is early/late
+
+    // Scoring arc on the left side
+    const ARC_X = 80;
+    const ARC_TOP_Y = 120;
+    const ARC_BOTTOM_Y = 380;
+    // Arc zones (from top to bottom): runs, color, y-range
+    const arcZones = [
+        { runs: 1, color: "#4caf50", yStart: 120, yEnd: 170, label: "1" },
+        { runs: 2, color: "#8bc34a", yStart: 170, yEnd: 220, label: "2" },
+        { runs: 4, color: "#ff9800", yStart: 220, yEnd: 280, label: "4" },
+        { runs: 6, color: "#f44336", yStart: 280, yEnd: 320, label: "6" }, // sweet spot
+        { runs: 4, color: "#ff9800", yStart: 320, yEnd: 360, label: "4" },
+        { runs: 2, color: "#8bc34a", yStart: 360, yEnd: 400, label: "2" },
+        { runs: 1, color: "#4caf50", yStart: 400, yEnd: 450, label: "1" }
     ];
-    const DANGER_ZONE_START = 150;
-    const DANGER_ZONE_END = 170;
-    const DANGER_ZONE_LAST_START = 720;
-    const DANGER_ZONE_LAST_END = STUMPS_X - 10;
 
     // Game states
     const STATE_IDLE = 'idle';
@@ -48,25 +53,22 @@
     let ballSpeed = 6.2;
     let hasSwungThisBall = false;
     let currentDeliveryResultProcessed = false;
-    let pendingRuns = 0;
-    let pendingWicket = false;
 
     // Hit flight variables
     let hitStartX, hitStartY;
     let hitTargetX, hitTargetY;
     let hitProgress = 0;
-    let hitDuration = 30; // frames
+    let hitDuration = 30;
     let hitFrame = 0;
+    let pendingRuns = 0;
 
     // Batsman animation
     let batsmanStanceOffset = 0;
     let swingAnimating = false;
     let swingFrame = 0;
 
-    // Particles
+    // Particles and trail
     let particles = [];
-
-    // Trail
     let trailPositions = [];
 
     // Match stats
@@ -147,7 +149,6 @@
         }
         totalBallsBowled++;
         updateScoreboardUI();
-        // Reset for next ball after delay
         setTimeout(() => {
             if(gameActive && !checkGameOver()){
                 resetForNextBall();
@@ -169,6 +170,33 @@
         drawCanvas();
     }
 
+    // Determine landing zone based on timing (ball x position)
+    function getTargetYFromTiming(ballPos) {
+        // Perfect timing
+        if (ballPos >= PERFECT_START && ballPos <= PERFECT_END) {
+            // Sweet spot: 6-run zone (middle)
+            let zone = arcZones.find(z => z.runs === 6);
+            let y = zone.yStart + (zone.yEnd - zone.yStart) / 2;
+            return y + (Math.random() - 0.5) * 20;
+        }
+        // Good timing
+        else if (ballPos >= GOOD_START && ballPos <= GOOD_END) {
+            // 4-run zones (two of them)
+            let fourZones = arcZones.filter(z => z.runs === 4);
+            let zone = fourZones[Math.floor(Math.random() * fourZones.length)];
+            let y = zone.yStart + (zone.yEnd - zone.yStart) / 2;
+            return y + (Math.random() - 0.5) * 30;
+        }
+        // Early/Late timing
+        else {
+            // 1 or 2 runs
+            let lowZones = arcZones.filter(z => z.runs <= 2);
+            let zone = lowZones[Math.floor(Math.random() * lowZones.length)];
+            let y = zone.yStart + (zone.yEnd - zone.yStart) / 2;
+            return y + (Math.random() - 0.5) * 40;
+        }
+    }
+
     // Called when player swings
     function playerSwing() {
         if(!gameActive || gameState !== STATE_BOWLING || hasSwungThisBall || currentDeliveryResultProcessed) return;
@@ -178,75 +206,60 @@
         swingAnimating = true;
         swingFrame = 0;
         
-        // Determine outcome based on ball position
         const currentBallPos = ballX;
-        let runs = 0;
-        let wicket = false;
-        let zoneHit = null;
         
-        for(let zone of zones) {
-            if(currentBallPos >= zone.start && currentBallPos <= zone.end) {
-                runs = zone.runs;
-                zoneHit = zone;
-                break;
-            }
-        }
-        
-        if(!zoneHit) {
-            wicket = true;
-            feedbackDiv.innerText = "💀 COMPLETE MISS! STUMPS SPLINTERED! 💀";
-        } else {
-            // Good hit: set up flight trajectory
-            pendingRuns = runs;
-            pendingWicket = false;
-            // Launch ball into air: target point based on runs
-            hitStartX = ballX;
-            hitStartY = ballY;
-            let baseX, baseY;
-            if (runs >= 6) {
-                baseX = canvas.width - 20;
-                baseY = 40 + Math.random() * 80;
-            } else if (runs >= 4) {
-                baseX = canvas.width - 50 + Math.random() * 30;
-                baseY = 60 + Math.random() * 120;
-            } else {
-                baseX = canvas.width - 100 + Math.random() * 80;
-                baseY = 100 + Math.random() * 180;
-            }
-            hitTargetX = baseX;
-            hitTargetY = baseY;
-            hitFrame = 0;
-            hitProgress = 0;
-            gameState = STATE_HIT;
-            // Cancel bowling animation
-            if(currentAnimationId) cancelAnimationFrame(currentAnimationId);
-            currentAnimationId = null;
-            // Start hit animation loop
-            function animateHit() {
-                if(gameState !== STATE_HIT) return;
-                hitFrame++;
-                hitProgress = hitFrame / hitDuration;
-                if(hitProgress >= 1) {
-                    // Hit completed
-                    endDelivery(pendingRuns, false);
-                    return;
-                }
-                // Interpolate position along quadratic curve
-                let t = hitProgress;
-                let x = hitStartX + (hitTargetX - hitStartX) * t;
-                let y = hitStartY + (hitTargetY - hitStartY) * t - 40 * t * (1 - t); // arc
-                ballX = x;
-                ballY = y;
-                drawCanvas();
-                requestAnimationFrame(animateHit);
-            }
-            animateHit();
+        // Check if ball is within valid hit range (near batsman)
+        if (currentBallPos < STUMPS_X - 120) {
+            // Too early, miss, wicket
+            feedbackDiv.innerText = "💀 TOO EARLY! BALL HITS STUMPS! 💀";
+            endDelivery(0, true);
             return;
         }
         
-        if(wicket) {
-            endDelivery(0, true);
+        // Determine target Y on arc based on timing
+        let targetY = getTargetYFromTiming(currentBallPos);
+        // Clamp to arc bounds
+        targetY = Math.min(ARC_BOTTOM_Y + 20, Math.max(ARC_TOP_Y - 20, targetY));
+        
+        hitStartX = ballX;
+        hitStartY = ballY;
+        hitTargetX = ARC_X + 20;
+        hitTargetY = targetY;
+        hitFrame = 0;
+        hitProgress = 0;
+        
+        // Determine which zone we're aiming for to get runs
+        let runsAwarded = 0;
+        for (let zone of arcZones) {
+            if (targetY >= zone.yStart && targetY <= zone.yEnd) {
+                runsAwarded = zone.runs;
+                break;
+            }
         }
+        pendingRuns = runsAwarded;
+        
+        gameState = STATE_HIT;
+        if(currentAnimationId) cancelAnimationFrame(currentAnimationId);
+        currentAnimationId = null;
+        
+        function animateHit() {
+            if(gameState !== STATE_HIT) return;
+            hitFrame++;
+            hitProgress = hitFrame / hitDuration;
+            if(hitProgress >= 1) {
+                endDelivery(pendingRuns, false);
+                return;
+            }
+            let t = hitProgress;
+            // Curved path (arc)
+            let x = hitStartX + (hitTargetX - hitStartX) * t;
+            let y = hitStartY + (hitTargetY - hitStartY) * t - 40 * t * (1 - t);
+            ballX = x;
+            ballY = y;
+            drawCanvas();
+            requestAnimationFrame(animateHit);
+        }
+        animateHit();
     }
 
     // Bowling animation
@@ -255,7 +268,6 @@
         ballX += ballSpeed;
         ballY = BALL_Y + Math.sin(Date.now() * 0.015) * 1.5;
         
-        // Add trail
         trailPositions.unshift({x: ballX, y: ballY});
         if(trailPositions.length > 12) trailPositions.pop();
         
@@ -269,9 +281,7 @@
             }
             return;
         }
-        if(currentDeliveryResultProcessed){
-            return;
-        }
+        if(currentDeliveryResultProcessed) return;
         drawCanvas();
         requestAnimationFrame(animateBall);
     }
@@ -289,25 +299,25 @@
         animateBall();
     }
 
-    // ---------- DRAWING (SMOOTH, MODERN) ----------
+    // ---------- DRAWING ----------
     function drawPitch() {
-        // Grass with gradient
+        // Dark grass gradient
         const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        grad.addColorStop(0, "#5b9e4a");
-        grad.addColorStop(1, "#3c7840");
+        grad.addColorStop(0, "#1a3a2f");
+        grad.addColorStop(1, "#0f2a20");
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // Pitch rectangle
-        ctx.fillStyle = "#dbbc87";
+        // Pitch rectangle with neon outline
+        ctx.fillStyle = "#2c4a3a";
         ctx.shadowBlur = 0;
         ctx.fillRect(60, 60, canvas.width-120, canvas.height-120);
-        ctx.fillStyle = "#f7e8c0";
+        ctx.fillStyle = "#3e6a52";
         ctx.fillRect(65, 65, canvas.width-130, canvas.height-130);
         
-        // Crease lines
+        // Crease lines with neon
         ctx.beginPath();
-        ctx.strokeStyle = "#fff4cf";
+        ctx.strokeStyle = "#00d4ff";
         ctx.lineWidth = 2;
         ctx.setLineDash([10, 15]);
         ctx.moveTo(STUMPS_X-25, 80);
@@ -323,27 +333,29 @@
         ctx.setLineDash([]);
     }
 
-    function drawZones() {
-        for(let zone of zones) {
-            // Translucent fill
-            ctx.globalAlpha = 0.35;
+    function drawScoringArc() {
+        // Draw arc background
+        ctx.globalAlpha = 0.6;
+        for (let zone of arcZones) {
             ctx.fillStyle = zone.color;
-            ctx.fillRect(zone.start, 70, zone.end-zone.start, canvas.height-140);
-            ctx.globalAlpha = 0.8;
-            ctx.fillStyle = zone.color;
-            ctx.fillRect(zone.start, BALL_Y-20, zone.end-zone.start, 18);
-            ctx.globalAlpha = 1;
-            ctx.font = "bold 20px 'Segoe UI'";
-            ctx.fillStyle = "#2c1e0f";
-            ctx.shadowBlur = 0;
-            ctx.fillText(zone.label, zone.start + (zone.end-zone.start)/2 - 8, BALL_Y-4);
+            ctx.fillRect(ARC_X - 15, zone.yStart, 35, zone.yEnd - zone.yStart);
         }
-        // Danger zones (red tint)
-        ctx.globalAlpha = 0.4;
-        ctx.fillStyle = "#ff6666";
-        ctx.fillRect(DANGER_ZONE_START, 70, DANGER_ZONE_END-DANGER_ZONE_START, canvas.height-140);
-        ctx.fillRect(DANGER_ZONE_LAST_START, 70, DANGER_ZONE_LAST_END-DANGER_ZONE_LAST_START, canvas.height-140);
         ctx.globalAlpha = 1;
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(ARC_X - 15, ARC_TOP_Y, 35, ARC_BOTTOM_Y - ARC_TOP_Y);
+        
+        // Labels
+        ctx.font = "bold 16px 'Segoe UI'";
+        ctx.fillStyle = "#fff";
+        ctx.shadowBlur = 2;
+        for (let zone of arcZones) {
+            let midY = (zone.yStart + zone.yEnd) / 2;
+            ctx.fillText(zone.label, ARC_X - 5, midY + 5);
+        }
+        ctx.fillStyle = "#00d4ff";
+        ctx.font = "bold 14px monospace";
+        ctx.fillText("SCORING ZONES", ARC_X - 25, ARC_TOP_Y - 10);
     }
 
     function drawStumps() {
@@ -358,7 +370,6 @@
     }
 
     function drawBatsman() {
-        // Idle animation: slight forward/backward movement
         let idleShift = Math.sin(Date.now() * 0.005) * 2;
         // Helmet
         ctx.fillStyle = "#2c3e50";
@@ -369,29 +380,22 @@
         ctx.beginPath();
         ctx.ellipse(STUMPS_X-40 + idleShift*0.5, BALL_Y-17 + idleShift*0.2, 13, 15, 0, 0, Math.PI*2);
         ctx.fill();
-        // Eyes
         ctx.fillStyle = "#000";
         ctx.beginPath();
         ctx.arc(STUMPS_X-46 + idleShift*0.5, BALL_Y-22 + idleShift*0.2, 2, 0, Math.PI*2);
         ctx.arc(STUMPS_X-34 + idleShift*0.5, BALL_Y-22 + idleShift*0.2, 2, 0, Math.PI*2);
         ctx.fill();
-        // Body
         ctx.fillStyle = "#2a5f8a";
         ctx.fillRect(STUMPS_X-48 + idleShift*0.5, BALL_Y-8 + idleShift*0.2, 30, 32);
         
-        // Bat with swing animation
         ctx.save();
         ctx.translate(STUMPS_X-30 + idleShift*0.5, BALL_Y + idleShift*0.2);
         if(swingAnimating) {
             let angle = Math.sin(swingFrame * 0.3) * 0.9;
             ctx.rotate(angle);
             swingFrame++;
-            if(swingFrame > 15) {
-                swingAnimating = false;
-                swingFrame = 0;
-            }
+            if(swingFrame > 15) swingAnimating = false;
         } else {
-            // idle bat rotation
             let idleRot = Math.sin(Date.now() * 0.003) * 0.05;
             ctx.rotate(idleRot);
         }
@@ -401,7 +405,6 @@
         ctx.fillRect(-22, 0, 12, 8);
         ctx.restore();
         
-        // Legs
         ctx.fillStyle = "#2c3e50";
         ctx.fillRect(STUMPS_X-44 + idleShift*0.5, BALL_Y+22 + idleShift*0.2, 10, 18);
         ctx.fillRect(STUMPS_X-30 + idleShift*0.5, BALL_Y+22 + idleShift*0.2, 10, 18);
@@ -421,7 +424,6 @@
         ctx.fill();
         ctx.fillStyle = "#3e2723";
         ctx.fillRect(BOWLER_X-16, BALL_Y-46, 32, 12);
-        // Arm (animated)
         let armAngle = Math.sin(Date.now() * 0.01) * 0.3;
         ctx.beginPath();
         ctx.moveTo(BOWLER_X+12, BALL_Y-18);
@@ -432,7 +434,6 @@
     }
 
     function drawBallWithTrail(x, y) {
-        // Draw trail
         for(let i=0; i<trailPositions.length; i++) {
             let t = trailPositions[i];
             ctx.globalAlpha = 0.3 - i*0.025;
@@ -476,21 +477,38 @@
         particles = particles.filter(p => p.life > 0);
     }
 
+    function drawTimingMeter() {
+        // Draw the timing zone indicator near batsman
+        ctx.globalAlpha = 0.4;
+        ctx.fillStyle = "#00d4ff";
+        ctx.fillRect(PERFECT_START, BALL_Y-25, PERFECT_END-PERFECT_START, 12);
+        ctx.fillStyle = "#88ffaa";
+        ctx.fillRect(GOOD_START, BALL_Y-25, GOOD_END-GOOD_START, 12);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "#fff";
+        ctx.font = "10px monospace";
+        ctx.fillText("Early", GOOD_START-35, BALL_Y-14);
+        ctx.fillText("Good", PERFECT_START-25, BALL_Y-14);
+        ctx.fillText("Perfect", PERFECT_START+15, BALL_Y-14);
+        ctx.fillText("Late", PERFECT_END+15, BALL_Y-14);
+    }
+
     function drawCanvas() {
         drawPitch();
-        drawZones();
+        drawScoringArc();
         drawBowler();
         drawStumps();
         drawBatsman();
         drawBallWithTrail(ballX, ballY);
         drawParticles();
+        drawTimingMeter();
 
         ctx.font = "bold 22px 'Segoe UI'";
-        ctx.fillStyle = "#faf6cf";
+        ctx.fillStyle = "#00d4ff";
         ctx.shadowBlur = 3;
         ctx.fillText(`${battingTeam}  ${score}/${wickets}`, 40, 55);
         ctx.font = "16px monospace";
-        ctx.fillStyle = "#f9e281";
+        ctx.fillStyle = "#88ffaa";
         ctx.fillText(`Target: ${target}  |  Overs: ${formatOvers(totalBallsBowled)}/${totalOvers}`, 40, 92);
         
         if(gameState === STATE_BOWLING && gameActive){
