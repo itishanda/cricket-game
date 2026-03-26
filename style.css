@@ -5,7 +5,7 @@
 }
 
 body {
-    background: linear-gradient(145deg, #0a2f1f 0%, #0a3b22 100%);
+    background: linear-gradient(145deg, #0a0f1a 0%, #0a1f2a 100%);
     min-height: 100vh;
     display: flex;
     justify-content: center;
@@ -16,11 +16,11 @@ body {
 }
 
 .game-container {
-    background: #1e3a2f;
+    background: #0e1a2b;
     border-radius: 48px;
     padding: 20px;
-    box-shadow: 0 20px 35px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.1);
-    border: 2px solid #f7d44a;
+    box-shadow: 0 20px 35px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.05);
+    border: 2px solid #00d4ff;
     max-width: 1040px;
     width: 100%;
 }
@@ -31,14 +31,14 @@ canvas {
     border-radius: 24px;
     box-shadow: 0 10px 20px rgba(0,0,0,0.4);
     cursor: pointer;
-    background: #2c6e2c;
+    background: #1a2a2f;
     width: 100%;
     height: auto;
     aspect-ratio: 1000 / 500;
 }
 
 .score-panel {
-    background: #0b2b1f;
+    background: #07121f;
     border-radius: 30px;
     padding: 12px 20px;
     margin: 15px 10px 10px 10px;
@@ -47,16 +47,16 @@ canvas {
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    color: #faf0c8;
-    text-shadow: 2px 2px 0 #1a3a2a;
+    color: #c4e6ff;
+    text-shadow: 0 0 2px #00a6ff;
     font-weight: bold;
-    border: 1px solid #f3bc4c;
+    border: 1px solid #00d4ff;
 }
 
 .score-card {
     display: flex;
     gap: 24px;
-    background: #00000055;
+    background: #00000066;
     padding: 6px 15px;
     border-radius: 40px;
     backdrop-filter: blur(2px);
@@ -65,12 +65,13 @@ canvas {
 .score-card span {
     font-size: 1.6rem;
     font-weight: 800;
-    background: #f7e05e;
-    color: #1e3a2f;
+    background: #00d4ff;
+    color: #0a1f2a;
     padding: 2px 12px;
     border-radius: 32px;
     margin-left: 8px;
     font-family: monospace;
+    box-shadow: 0 0 5px #00d4ff;
 }
 
 .controls {
@@ -83,32 +84,44 @@ canvas {
 }
 
 select, button {
-    background: #f3cd81;
-    border: none;
+    background: #0e1a2b;
+    border: 1px solid #00d4ff;
     font-family: 'Segoe UI', monospace;
     font-weight: bold;
     font-size: 1.1rem;
     padding: 8px 16px;
     border-radius: 60px;
     cursor: pointer;
-    box-shadow: 0 5px 0 #a55f2a;
     transition: 0.07s linear;
-    color: #2a2f1f;
+    color: #00d4ff;
+    box-shadow: 0 0 5px rgba(0,212,255,0.3);
+}
+
+select:hover, button:hover {
+    background: #00d4ff;
+    color: #0a1f2a;
+    box-shadow: 0 0 12px #00d4ff;
 }
 
 select:active, button:active {
     transform: translateY(2px);
-    box-shadow: 0 2px 0 #a55f2a;
 }
 
 .swing-btn {
-    background: #ffb347;
+    background: #ffaa33;
+    border: none;
     font-size: 1.8rem;
     font-weight: bold;
     padding: 12px 35px;
     letter-spacing: 4px;
-    box-shadow: 0 8px 0 #a14500;
-    color: #2c1a0c;
+    color: #1f2a0c;
+    box-shadow: 0 0 12px #ffaa33;
+    text-shadow: 0 0 2px black;
+}
+
+.swing-btn:hover {
+    background: #ffcc66;
+    box-shadow: 0 0 20px #ffcc66;
 }
 
 .action-area {
@@ -120,28 +133,30 @@ select:active, button:active {
 }
 
 .feedback-area {
-    background: #1f2a1b;
+    background: #07121f;
     padding: 6px 15px;
     border-radius: 50px;
     font-size: 1.1rem;
     font-weight: bold;
     text-align: center;
-    color: #ffe6a3;
+    color: #00d4ff;
     min-width: 180px;
     flex: 1;
+    border: 1px solid #00d4ff;
 }
 
 .rrr {
     background: #00000066;
     border-radius: 20px;
     padding: 4px 12px;
+    border: 1px solid #00d4ff;
 }
 
 .instruction {
     text-align: center;
     font-size: 12px;
     margin-top: 12px;
-    color: #cbb86b;
+    color: #88ccff;
 }
 
 @media (max-width: 850px) {
